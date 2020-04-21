@@ -1,12 +1,27 @@
 const express = require('express');
 const cors = require('cors');
-const { uuid } = require('uuidv4');
+const { uuid, isUuid } = require('uuidv4');
 const app = express();
 
 app.use(express.json());
 app.use(cors());
 
 const repositories = [];
+
+function validateRepository(request, response, next) {
+    const { id } = request.params;
+    const repositoryIndex = repositories.findIndex(
+        repository => repository.id === id
+    );
+
+    if (!isUuid || repositoryIndex < 0) {
+        return response.status(400).json({ error: "Repository or ID Not Found" });
+    } else {
+        return next();
+    }
+}
+
+app.use("/repositories/:id", validateRepository);
 
 app.get('/repositories', (request, response) => {
     return response.json(repositories);
@@ -29,8 +44,9 @@ app.post('/repositories', (request, response) => {
 
 app.put('/repositories/:id', (request, response) => {
     const { id } = request.params;
-    const { title, url, techs, likes } = request.body;
+    const { title, url, techs } = request.body;
     const repositoryIndex = repositories.findIndex(repository => repository.id === id);
+    const likes = repositories[repositoryIndex].likes;
 
     if (repositoryIndex < 0) {
         return response.status(400).json( {error: 'Repository not found.'} );
